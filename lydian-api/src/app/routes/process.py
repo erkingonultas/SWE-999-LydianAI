@@ -36,7 +36,6 @@ def process_speech_to_code():
             updated_code = ""
             for chunk in response_stream:
                 updated_code += chunk
-                print(chunk)
                 yield f"data: {chunk}\n\n"
             
             current_code = updated_code
