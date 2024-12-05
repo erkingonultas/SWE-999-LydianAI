@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Button, Card, CardContent, CardHeader, Typography, Box } from '@mui/material';
+import { Button, Card, CardContent, CardHeader, CardActions, Typography, Box, IconButton, Tooltip } from '@mui/material';
+import Snackbar from '@mui/material/Snackbar';
+import GraphicEqIcon from '@mui/icons-material/GraphicEq';
+import KeyboardVoiceIcon from '@mui/icons-material/KeyboardVoice';
 import { CodeEditor } from './CodeEditor';
 import { useCodeVersions } from '../hooks/useCodeVersions';
 import axios from 'axios';
@@ -10,10 +13,8 @@ import {
     SandpackPreview,
   } from "@codesandbox/sandpack-react";
 
-const initialCode = `def hello_world():
-    print("Hello, World!")
-
-hello_world()
+const initialCode = `def multiply(a, b):
+    return a * b
 `;
 
 const initialReactCode = `import React, { useState } from 'react';
@@ -55,6 +56,7 @@ export default Dummy;
 `;
 
 export function CodeGenerationResult() {
+  const [open, setOpen] = useState(false);
   const previewRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
   const [instruction, setInstruction] = useState("Create a function to multiply two numbers");
@@ -63,9 +65,21 @@ export function CodeGenerationResult() {
   const [code, setCode] = useState("");
   const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions(initialCode);
 
-    const togglePreview = () => {
-        setIsFrontend(!isFrontend);
+  const handleClick = () => {
+    setOpen(true);
+    togglePreview();
+  };
+  const handleClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
     }
+
+    setOpen(false);
+  };
+  
+  const togglePreview = () => {
+      setIsFrontend(!isFrontend);
+  }
 
   const handleCodeChange = (newCode) => {
     addVersion(newCode);
@@ -137,9 +151,24 @@ export function CodeGenerationResult() {
 
   return (
     <Card sx={{ maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
-      <CardHeader title="Workbench"/>
-      <Box sx={{display: 'flex', justifyContent: 'space-between', paddingX: '20px'}}>
-        <Typography variant="h6" fontWeight={"bold"} gutterBottom>{instruction ?? error}</Typography>
+      <CardHeader 
+        title="Workbench"
+        action={
+          <Tooltip title="Render React codes" arrow placement="top">
+            <IconButton aria-label="toggle-preview" onClick={handleClick}>
+              <GraphicEqIcon />
+            </IconButton>
+            <Snackbar
+              open={open}
+              autoHideDuration={5000}
+              onClose={handleClose}
+              message="A React code must be on the Workbench."
+            />
+          </Tooltip>
+        }/>
+      <Box sx={{paddingX: '20px'}}>
+        <Typography variant="h7" fontWeight={"500"} gutterBottom>{error == "" ? "Prompt" : error}</Typography><br />
+        <Typography variant="h8" fontWeight={"400"} gutterBottom>{instruction ?? error}</Typography>
       </Box>
       <CardContent>
         <Box >
@@ -182,25 +211,30 @@ export function CodeGenerationResult() {
             }
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'end', mt: 2 }}>
-          {/* <Box>
-            <Button onClick={goToPreviousVersion} disabled={!canGoBack} sx={{ mr: 1 }}>
-              Previous Version
-            </Button>
-            <Button onClick={goToNextVersion} disabled={!canGoForward}>
-              Next Version
-            </Button>
-          </Box> */}
-          <Button onClick={togglePreview} variant='contained'>Toggle Preview</Button>
+          <Box>
+            
+          </Box>
+          
+        </Box>
+      </CardContent>
+      <CardActions>
+          <Button onClick={goToPreviousVersion} disabled={!canGoBack} sx={{ mr: 1 }}>
+            Previous Version
+          </Button>
+          <Button onClick={goToNextVersion} disabled={!canGoForward}>
+            Next Version
+          </Button>
           <Button
             onClick={processSpeechToCode}
             disabled={isListening}
             variant={isListening ? 'contained' : 'outlined'}
             color={isListening ? 'secondary' : 'primary'}
+            style={{marginLeft: "auto"}}
+            endIcon={<KeyboardVoiceIcon/>}
           >
             {isListening ? 'Listening' : 'Start'}
           </Button>
-        </Box>
-      </CardContent>
+      </CardActions>
     </Card>
   );
 }
