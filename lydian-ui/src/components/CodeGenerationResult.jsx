@@ -94,7 +94,7 @@ export function CodeGenerationResult() {
 
     try {
       // Send request to the Flask backend
-      const response = await axios.post("http://127.0.0.1:5000/process");
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/process`);
       if (response.data.success) {
         setInstruction(response.data.instruction);
         handleCodeChange(response.data.updated_code);
@@ -117,7 +117,7 @@ export function CodeGenerationResult() {
     setCode("");
     setIsFrontend(false);
 
-    const eventSource = new EventSource("http://127.0.0.1:5000/process");
+    const eventSource = new EventSource(`${process.env.REACT_APP_API_URL}/process`);
 
     eventSource.onmessage = (event) => {
       const message = event.data;
