@@ -5,8 +5,10 @@ export function useCodeVersions(initialCode) {
   const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
 
   const addVersion = useCallback((newCode) => {
-    setVersions((prev) => [...prev, newCode]);
-    setCurrentVersionIndex((prev) => prev + 1);
+    if(newCode.length > 0) { 
+      setVersions((prev) => [...prev, newCode]);
+      setCurrentVersionIndex((prev) => prev + 1);
+    }
   }, []);
 
   const goToPreviousVersion = useCallback(() => {

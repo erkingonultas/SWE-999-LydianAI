@@ -62,7 +62,7 @@ export function CodeGenerationResult() {
   const [instruction, setInstruction] = useState("Create a function to multiply two numbers");
   const [isFrontend, setIsFrontend] = useState(false);
   const [error, setError] = useState("");
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode);
   const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions(initialCode);
 
   const handleClick = () => {
@@ -173,7 +173,7 @@ export function CodeGenerationResult() {
       <CardContent>
         <Box >
           {!isFrontend && <Box sx={{ flex: 1 }}>
-            <CodeEditor initialCode={code} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
+            <CodeEditor initialCode={instruction === "" ? code : currentCode} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
           </Box>}
             {isFrontend && <SandpackProvider 
                 template="react"
