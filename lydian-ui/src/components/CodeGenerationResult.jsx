@@ -173,7 +173,7 @@ export function CodeGenerationResult() {
       <CardContent>
         <Box >
           {!isFrontend && <Box sx={{ flex: 1 }}>
-            <CodeEditor initialCode={instruction === "" ? code : currentCode} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
+            <CodeEditor initialCode={code} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
           </Box>}
             {isFrontend && <SandpackProvider 
                 template="react"
