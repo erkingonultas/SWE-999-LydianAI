@@ -20,12 +20,14 @@ function App() {
         minHeight: '100vh', 
         padding: 3 
       }}>
-        <Typography variant="h3" component="h1" fontWeight={900} gutterBottom>
+        <Typography variant="h4" component="h2" fontWeight={900} gutterBottom>
           LydianAI
         </Typography>
         <CodeGenerationResult />
-        <Typography variant="p" component="p" fontWeight={100} fontSize={12} color='#bbb' gutterBottom>A BOUN M.Sc. Software Engineering Graduate Project</Typography>
-        <Typography variant="p" component="p" fontWeight={100} fontSize={14} color='#bbb' gutterBottom>Designed and developed by Erkin GÖNÜLTAŞ, instructed by Prof. Dr. Fatih ALAGÖZ</Typography>
+        <div style={{margin: "auto", textAlign: "center"}}>
+        <Typography variant="p" component="p" fontWeight={100} fontSize={12} color='#bbb'>A BOUN M.Sc. Software Engineering Graduate Project</Typography>
+        <Typography variant="p" component="p" fontWeight={100} fontSize={14} color='#bbb'>Designed and developed by Erkin GÖNÜLTAŞ, instructed by Prof. Dr. Fatih ALAGÖZ</Typography>
+        </div>
       </Box>
     </ThemeProvider>
   );

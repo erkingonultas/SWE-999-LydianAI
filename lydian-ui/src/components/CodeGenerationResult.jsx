@@ -60,9 +60,9 @@ export function CodeGenerationResult() {
   const previewRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
   const [instruction, setInstruction] = useState("Create a function to multiply two numbers");
-  const [isFrontend, setIsFrontend] = useState(false);
+  const [isFrontend, setIsFrontend] = useState(true);
   const [error, setError] = useState("");
-  const [code, setCode] = useState(initialCode);
+  const [code, setCode] = useState(initialReactCode);
   const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions(initialCode);
 
   const handleClick = () => {
@@ -138,7 +138,7 @@ export function CodeGenerationResult() {
         }
         eventSource.close();
       } else if (message !== "" && !message.startsWith("Code generation started...") && !message.startsWith("Generating code from instruction") && !message.startsWith("Recognizing your speech...") && !message.startsWith("Listening to your speech...")) {
-        setCode((prev) => prev + message.replace("   ", "\n").replace("};", "};\n").replace("';", "';\n")); // Append the new chunk of code
+        setCode((prev) => prev + message.replace("   ", "\n").replace("};", "};\n").replace("}", "}\n").replace(");", ");\n").replace("';", "';\n")); // Append the new chunk of code
       }
     };
 
@@ -150,7 +150,7 @@ export function CodeGenerationResult() {
   }; 
 
   return (
-    <Card sx={{ maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
+    <Card sx={{ height: "80vh", maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
       <CardHeader 
         title="Workbench"
         action={
@@ -171,20 +171,21 @@ export function CodeGenerationResult() {
         <Typography variant="h8" fontWeight={"400"} gutterBottom>{instruction ?? error}</Typography>
       </Box>
       <CardContent>
-        <Box >
+        <Box height="56vh" >
           {!isFrontend && <Box sx={{ flex: 1 }}>
             <CodeEditor initialCode={code} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
           </Box>}
-            {isFrontend && <SandpackProvider 
+            {isFrontend && <SandpackProvider
                 template="react"
                 files={{
                         "App.js": code,
                 }}>
-                <SandpackLayout>
-                    <SandpackCodeEditor options={{
+                <SandpackLayout style={{height: "56vh"}}>
+                    <SandpackCodeEditor style={{height: "56vh"}} options={{
                         editorHeight: 500,
                     }}/>
                     <SandpackPreview
+                    style={{height: "56vh"}}
                     ref={previewRef}
                     actionsChildren={
                         <button
@@ -209,12 +210,6 @@ export function CodeGenerationResult() {
                 </SandpackLayout>
             </SandpackProvider>
             }
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'end', mt: 2 }}>
-          <Box>
-            
-          </Box>
-          
         </Box>
       </CardContent>
       <CardActions>

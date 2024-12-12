@@ -48,7 +48,7 @@ export function CodeEditor({ initialCode, onCodeChange, codeLanguage }) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: "57vh", overflow: "scroll" }}>
         <Box sx={{minHeight: 400}}>
         <SyntaxHighlighter language={codeLanguage} style={docco}>
           {initialCode}
