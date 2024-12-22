@@ -3,15 +3,18 @@ import { Button, Card, CardContent, CardHeader, CardActions, Typography, Box, Ic
 import Snackbar from '@mui/material/Snackbar';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import KeyboardVoiceIcon from '@mui/icons-material/KeyboardVoice';
+import LogoutIcon from '@mui/icons-material/Logout';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import { CodeEditor } from './CodeEditor';
 import { useCodeVersions } from '../hooks/useCodeVersions';
 import axios from 'axios';
 import {
-    SandpackProvider,
-    SandpackCodeEditor,
-    SandpackLayout,
-    SandpackPreview,
-  } from "@codesandbox/sandpack-react";
+  SandpackProvider,
+  SandpackCodeEditor,
+  SandpackLayout,
+  SandpackPreview,
+} from "@codesandbox/sandpack-react";
+import axiosInstance from '../utils/axiosInstance';
 
 const initialCode = `def multiply(a, b):
     return a * b
@@ -65,6 +68,11 @@ export function CodeGenerationResult() {
   const [code, setCode] = useState(initialReactCode);
   const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions(initialCode);
 
+  const logoutUser = async () => {
+    await await axiosInstance.post(`${process.env.REACT_APP_API_URL}/logout`);
+    window.location.href = "/";
+  };
+
   const handleClick = () => {
     setOpen(true);
     togglePreview();
@@ -76,16 +84,16 @@ export function CodeGenerationResult() {
 
     setOpen(false);
   };
-  
+
   const togglePreview = () => {
-      setIsFrontend(!isFrontend);
+    setIsFrontend(!isFrontend);
   }
 
   const handleCodeChange = (newCode) => {
     addVersion(newCode);
-  };  
+  };
 
-  const toggleListening =  async () => {
+  const toggleListening = async () => {
     setIsListening(!isListening);
     setError("");
     setInstruction("");
@@ -105,7 +113,7 @@ export function CodeGenerationResult() {
     } catch (err) {
       setError("Failed to connect to the backend. Ensure the Flask server is running.");
     } finally {
-        setIsListening(false);
+      setIsListening(false);
     }
   };
 
@@ -131,10 +139,10 @@ export function CodeGenerationResult() {
       } else if (message === "Code generation complete.") {
         setIsListening(false);
         handleCodeChange(code);
-        if(code.startsWith("import React")) {
-            setIsFrontend(true)
+        if (code.startsWith("import React")) {
+          setIsFrontend(true)
         } else {
-            setIsFrontend(false)
+          setIsFrontend(false)
         }
         eventSource.close();
       } else if (message !== "" && !message.startsWith("Code generation started...") && !message.startsWith("Generating code from instruction") && !message.startsWith("Recognizing your speech...") && !message.startsWith("Listening to your speech...")) {
@@ -143,76 +151,102 @@ export function CodeGenerationResult() {
     };
 
     eventSource.onerror = () => {
-        setError("Connection to the server lost.");
-        setIsListening(false);
-        eventSource.close();
-      };
-  }; 
+      setError("Connection to the server lost.");
+      setIsListening(false);
+      eventSource.close();
+    };
+  };
 
   return (
-    <Card sx={{ height: "80vh", maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
-      <CardHeader 
-        title="Workbench"
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      padding: 3
+    }}>
+      <Card sx={{ width: '100%', marginBottom: 2 }} variant="none">
+        <CardHeader title={<Typography variant="h4" component="h2" fontWeight={900} gutterBottom align="center">LydianAI</Typography>} 
         action={
-          <Tooltip title="Render React codes" arrow placement="top">
-            <IconButton aria-label="toggle-preview" onClick={handleClick}>
-              <GraphicEqIcon />
-            </IconButton>
-            <Snackbar
-              open={open}
-              autoHideDuration={5000}
-              onClose={handleClose}
-              message="A React code must be on the Workbench."
-            />
-          </Tooltip>
-        }/>
-      <Box sx={{paddingX: '20px'}}>
-        <Typography variant="h7" fontWeight={"500"} gutterBottom>{error == "" ? "Prompt" : error}</Typography><br />
-        <Typography variant="h8" fontWeight={"400"} gutterBottom>{instruction ?? error}</Typography>
-      </Box>
-      <CardContent>
-        <Box height="56vh" >
-          {!isFrontend && <Box sx={{ flex: 1 }}>
-            <CodeEditor initialCode={code} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
-          </Box>}
+          <IconButton edge="end" aria-label="logout" onClick={logoutUser}>
+            <Tooltip title="Logout">
+            <LogoutIcon/>
+            </Tooltip>
+          </IconButton>
+        }
+        avatar={
+          
+          <IconButton edge="end" aria-label="logout" onClick={() => {alert("display sessions")}}>
+            <Tooltip title="Logout">
+            <InventoryIcon/>
+            </Tooltip>
+          </IconButton>
+        } />
+      </Card>
+      <Card sx={{ height: "80vh", maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
+        <CardHeader
+          title="Workbench"
+          action={
+            <Tooltip title="Render React codes" arrow placement="top">
+              <IconButton aria-label="toggle-preview" onClick={handleClick}>
+                <GraphicEqIcon />
+              </IconButton>
+              <Snackbar
+                open={open}
+                autoHideDuration={5000}
+                onClose={handleClose}
+                message="A React code must be on the Workbench."
+              />
+            </Tooltip>
+          } />
+        <Box sx={{ paddingX: '20px' }}>
+          <Typography variant="h7" fontWeight={"500"} gutterBottom>{error == "" ? "Prompt" : error}</Typography><br />
+          <Typography variant="h8" fontWeight={"400"} gutterBottom>{instruction ?? error}</Typography>
+        </Box>
+        <CardContent>
+          <Box height="56vh" >
+            {!isFrontend && <Box sx={{ flex: 1 }}>
+              <CodeEditor initialCode={code} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
+            </Box>}
             {isFrontend && <SandpackProvider
-                template="react"
-                files={{
-                        "App.js": code,
-                }}>
-                <SandpackLayout style={{height: "56vh"}}>
-                    <SandpackCodeEditor style={{height: "56vh"}} options={{
-                        editorHeight: 500,
-                    }}/>
-                    <SandpackPreview
-                    style={{height: "56vh"}}
-                    ref={previewRef}
-                    actionsChildren={
-                        <button
-                        onClick={() => {
-                            const client = previewRef.current?.getClient();
-                            if (!client) return;
+              template="react"
+              files={{
+                "App.js": code,
+              }}>
+              <SandpackLayout style={{ height: "56vh" }}>
+                <SandpackCodeEditor style={{ height: "56vh" }} options={{
+                  editorHeight: 500,
+                }} />
+                <SandpackPreview
+                  style={{ height: "56vh" }}
+                  ref={previewRef}
+                  actionsChildren={
+                    <button
+                      onClick={() => {
+                        const client = previewRef.current?.getClient();
+                        if (!client) return;
 
-                            const tailwindCdn = "https://cdn.tailwindcss.com";
-                            const externalResources =
-                            client.options.externalResources?.includes(tailwindCdn)
-                                ? []
-                                : ["https://cdn.tailwindcss.com"];
+                        const tailwindCdn = "https://cdn.tailwindcss.com";
+                        const externalResources =
+                          client.options.externalResources?.includes(tailwindCdn)
+                            ? []
+                            : ["https://cdn.tailwindcss.com"];
 
-                            client.updateOptions({ ...client.options, externalResources });
-                            client.dispatch({ type: "refresh" });
-                        }}
-                        >
-                        Toggle Tailwind
-                        </button>
-                    }
-                    />
-                </SandpackLayout>
+                        client.updateOptions({ ...client.options, externalResources });
+                        client.dispatch({ type: "refresh" });
+                      }}
+                    >
+                      Toggle Tailwind
+                    </button>
+                  }
+                />
+              </SandpackLayout>
             </SandpackProvider>
             }
-        </Box>
-      </CardContent>
-      <CardActions>
+          </Box>
+        </CardContent>
+        <CardActions>
           <Button onClick={goToPreviousVersion} disabled={!canGoBack} sx={{ mr: 1 }}>
             Previous Version
           </Button>
@@ -224,12 +258,18 @@ export function CodeGenerationResult() {
             disabled={isListening}
             variant={isListening ? 'contained' : 'outlined'}
             color={isListening ? 'secondary' : 'primary'}
-            style={{marginLeft: "auto"}}
-            endIcon={<KeyboardVoiceIcon/>}
+            style={{ marginLeft: "auto" }}
+            endIcon={<KeyboardVoiceIcon />}
           >
             {isListening ? 'Listening' : 'Start'}
           </Button>
-      </CardActions>
-    </Card>
+        </CardActions>
+      </Card>
+      <div style={{ margin: "auto", textAlign: "center" }}>
+        <Typography variant="p" component="p" fontWeight={100} fontSize={12} color='#bbb'>A BOUN M.Sc. Software Engineering Graduate Project</Typography>
+        <Typography variant="p" component="p" fontWeight={100} fontSize={14} color='#bbb'>Designed and developed by Erkin GÖNÜLTAŞ, instructed by Prof. Dr. Fatih ALAGÖZ</Typography>
+      </div>
+    </Box>
+
   );
 }
