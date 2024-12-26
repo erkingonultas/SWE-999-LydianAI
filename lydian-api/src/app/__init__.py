@@ -22,12 +22,14 @@ def create_app():
     # Register blueprints
     from app.routes.recognize import recognize_bp
     from app.routes.process import process_bp
+    from app.routes.update_code import generate_bp
     from app.routes.register import register_bp
     from app.routes.login import login_bp
     from app.routes.getme import current_user_bp
     from app.routes.logout import logout_bp
 
     app.register_blueprint(recognize_bp)
+    app.register_blueprint(generate_bp)
     app.register_blueprint(process_bp)
     app.register_blueprint(register_bp)
     app.register_blueprint(login_bp)
