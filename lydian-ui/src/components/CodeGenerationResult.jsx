@@ -69,7 +69,7 @@ export function CodeGenerationResult() {
   const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions(initialCode);
 
   const logoutUser = async () => {
-    await await axiosInstance.post(`${process.env.REACT_APP_API_URL}/logout`);
+    await axiosInstance.post(`${process.env.REACT_APP_API_URL}/logout`);
     window.location.href = "/";
   };
 
@@ -102,7 +102,7 @@ export function CodeGenerationResult() {
 
     try {
       // Send request to the Flask backend
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/process`);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/generate`);
       if (response.data.success) {
         setInstruction(response.data.instruction);
         handleCodeChange(response.data.updated_code);
@@ -146,9 +146,11 @@ export function CodeGenerationResult() {
         }
         eventSource.close();
       } else if (message !== "" && !message.startsWith("Code generation started...") && !message.startsWith("Generating code from instruction") && !message.startsWith("Recognizing your speech...") && !message.startsWith("Listening to your speech...")) {
-        setCode((prev) => prev + message.replace("   ", "\n").replace("};", "};\n").replace("}", "}\n").replace(");", ");\n").replace("';", "';\n")); // Append the new chunk of code
+        console.log(message);
+        setCode((prev) => prev + message.replace("   ", "\n").replace("  ", "\n").replace("};", "};\n").replace(");", ");\n").replace("';", "';\n")); // Append the new chunk of code
       }
     };
+    // .replace("   ", "\n").replace("};", "};\n").replace("}", "}\n").replace(");", ");\n").replace("';", "';\n")
 
     eventSource.onerror = () => {
       setError("Connection to the server lost.");
@@ -207,12 +209,13 @@ export function CodeGenerationResult() {
         <CardContent>
           <Box height="56vh" >
             {!isFrontend && <Box sx={{ flex: 1 }}>
-              <CodeEditor initialCode={code} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
+              <CodeEditor initialCode={currentCode} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
             </Box>}
             {isFrontend && <SandpackProvider
               template="react"
+
               files={{
-                "App.js": code,
+                "App.js": currentCode,
               }}>
               <SandpackLayout style={{ height: "56vh" }}>
                 <SandpackCodeEditor style={{ height: "56vh" }} options={{
@@ -254,7 +257,7 @@ export function CodeGenerationResult() {
             Next Version
           </Button>
           <Button
-            onClick={processSpeechToCode}
+            onClick={toggleListening}
             disabled={isListening}
             variant={isListening ? 'contained' : 'outlined'}
             color={isListening ? 'secondary' : 'primary'}
