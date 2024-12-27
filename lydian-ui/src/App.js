@@ -6,11 +6,37 @@ import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import { CodeGenerationResult } from './components/CodeGenerationResult';
 import axiosInstance from "./utils/axiosInstance";
+import Register from "./components/RegisterPage";
 
 const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#191919',
+    },
+    background: {
+      default: '#ffffff',
+    },
+  },
   typography: {
-    fontFamily:
-      'Rubik',
+    fontFamily: 'Rubik',
+    h1: {
+      fontWeight: 700,
+    },
+    h2: {
+      fontWeight: 700,
+    },
+    h3: {
+      fontWeight: 600,
+    },
+  },
+  components: {
+    Button: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4,
+        },
+      },
+    },
   },
 });
 
@@ -37,6 +63,7 @@ function App() {
           <Route path='*' element={user == null ? <LandingPage /> : <CodeGenerationResult />}></Route>
           <Route path='/product' element={user == null ? <LandingPage /> : <CodeGenerationResult />}></Route>
           <Route path="/login" element={user == null ? <LoginPage /> : <CodeGenerationResult />}></Route>
+          <Route path="/register" element={user == null ? <Register /> : <CodeGenerationResult />}></Route>
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

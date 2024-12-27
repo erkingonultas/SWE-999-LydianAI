@@ -41,18 +41,22 @@ export function CodeGenerationResult() {
   const [instruction, setInstruction] = useState("For example: Create a react app to calculate bills.");
   const [isFrontend, setIsFrontend] = useState(true);
   const [error, setError] = useState("");
-  const [code, setCode] = useState(initialReactCode);
+  // const [code, setCode] = useState(initialReactCode);
   const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions("");
 
   const logoutUser = async () => {
+    try {
     await axiosInstance.post(`${process.env.REACT_APP_API_URL}/logout`);
     window.location.href = "/";
+    } catch (error) {
+      console.error(error);
+      showSnack("Logout failed. Please try again later.");
+    }
   };
 
   const showSnack = (text) => {
     setSnackText(text);
     setOpen(true);
-    
   };
 
   const switchMode = () => {
@@ -104,47 +108,47 @@ export function CodeGenerationResult() {
     }
   };
 
-  const processSpeechToCode = () => {
-    setIsListening(!isListening);
-    setError("");
-    setInstruction("");
-    handleCodeChange("");
-    setCode("");
-    setIsFrontend(false);
+  // const processSpeechToCode = () => {
+  //   setIsListening(!isListening);
+  //   setError("");
+  //   setInstruction("");
+  //   handleCodeChange("");
+  //   setCode("");
+  //   setIsFrontend(false);
 
-    const eventSource = new EventSource(`${process.env.REACT_APP_API_URL}/process`);
+  //   const eventSource = new EventSource(`${process.env.REACT_APP_API_URL}/process`);
 
-    eventSource.onmessage = (event) => {
-      const message = event.data;
+  //   eventSource.onmessage = (event) => {
+  //     const message = event.data;
 
-      if (message.startsWith("Instruction received:")) {
-        setInstruction(message.replace("Instruction received: ", ""));
-      } else if (message.startsWith("Error:")) {
-        setError(message.replace("Error: ", ""));
-        setIsListening(false);
-        eventSource.close();
-      } else if (message === "Code generation complete.") {
-        setIsListening(false);
-        handleCodeChange(code);
-        if (code.startsWith("import React")) {
-          setIsFrontend(true)
-        } else {
-          setIsFrontend(false)
-        }
-        eventSource.close();
-      } else if (message !== "" && !message.startsWith("Code generation started...") && !message.startsWith("Generating code from instruction") && !message.startsWith("Recognizing your speech...") && !message.startsWith("Listening to your speech...")) {
-        console.log(message);
-        setCode((prev) => prev + message.replace("   ", "\n").replace("  ", "\n").replace("};", "};\n").replace(");", ");\n").replace("';", "';\n")); // Append the new chunk of code
-      }
-    };
-    // .replace("   ", "\n").replace("};", "};\n").replace("}", "}\n").replace(");", ");\n").replace("';", "';\n")
+  //     if (message.startsWith("Instruction received:")) {
+  //       setInstruction(message.replace("Instruction received: ", ""));
+  //     } else if (message.startsWith("Error:")) {
+  //       setError(message.replace("Error: ", ""));
+  //       setIsListening(false);
+  //       eventSource.close();
+  //     } else if (message === "Code generation complete.") {
+  //       setIsListening(false);
+  //       handleCodeChange(code);
+  //       if (code.startsWith("import React")) {
+  //         setIsFrontend(true)
+  //       } else {
+  //         setIsFrontend(false)
+  //       }
+  //       eventSource.close();
+  //     } else if (message !== "" && !message.startsWith("Code generation started...") && !message.startsWith("Generating code from instruction") && !message.startsWith("Recognizing your speech...") && !message.startsWith("Listening to your speech...")) {
+  //       console.log(message);
+  //       setCode((prev) => prev + message.replace("   ", "\n").replace("  ", "\n").replace("};", "};\n").replace(");", ");\n").replace("';", "';\n")); // Append the new chunk of code
+  //     }
+  //   };
+  //   // .replace("   ", "\n").replace("};", "};\n").replace("}", "}\n").replace(");", ");\n").replace("';", "';\n")
 
-    eventSource.onerror = () => {
-      setError("Connection to the server lost.");
-      setIsListening(false);
-      eventSource.close();
-    };
-  };
+  //   eventSource.onerror = () => {
+  //     setError("Connection to the server lost.");
+  //     setIsListening(false);
+  //     eventSource.close();
+  //   };
+  // };
 
   // SESSION MANAGEMENT
   useEffect(() => {
@@ -262,16 +266,13 @@ export function CodeGenerationResult() {
   }
 
   return (
-    <Box sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      padding: 3
-    }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', padding: 1 }}>
       <Card sx={{ width: '100%' }} variant="none">
-        <CardHeader title={<Typography variant="h4" component="h2" fontWeight={900} gutterBottom align="center">LydianAI</Typography>} 
+        <CardHeader title={<Typography variant="h4" component="h2" fontWeight={900} gutterBottom align="center" sx={{
+                                background: 'linear-gradient(45deg, #191919 30%, #6d8a91 90%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent'
+                            }}>LydianAI</Typography>} 
         action={
           <IconButton edge="end" aria-label="logout" onClick={logoutUser}>
             <Tooltip title="Logout">
@@ -301,7 +302,13 @@ export function CodeGenerationResult() {
               ))}
             </Select>
           </FormControl>
-             : <Typography>Create session</Typography>}
+             : <Button
+             onClick={() => createSession()}
+             variant={'outlined'}
+             color={'primary'}
+           >
+             Create a session
+           </Button>}
             <IconButton edge="end" aria-label="rename-session" onClick={() => renameSession()} style={{ marginLeft: "3px" }}>
               <Tooltip title="rename selected session">
                 <DriveFileRenameOutlineIcon/>
@@ -316,14 +323,20 @@ export function CodeGenerationResult() {
           
         } />
       </Card>
-      <Card sx={{ height: "75vh", maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
+      <Card sx={{ height: "78vh", maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
         <CardHeader
           title="Workbench"
           action={
             <Tooltip title="Render React codes" arrow placement="top">
-              <IconButton aria-label="toggle-preview" onClick={() => switchMode()}>
-                <GraphicEqIcon />
-              </IconButton>
+              <Button
+                aria-label="toggle-preview" onClick={() => switchMode()}
+                variant={isListening ? 'contained' : 'outlined'}
+                color={isListening ? 'secondary' : 'primary'}
+                style={{ marginLeft: "auto" }}
+                endIcon={<GraphicEqIcon />}
+              >
+                Change View
+              </Button>
             </Tooltip>
           } />
           <Snackbar
@@ -339,7 +352,7 @@ export function CodeGenerationResult() {
         <CardContent>
           {selectedSessionId == null ? <Typography>Choose a session to start</Typography> :<Box height="56vh" >
             {!isFrontend && <Box sx={{ flex: 1 }}>
-              <CodeEditor initialCode={currentCode} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
+              <CodeEditor initialCode={currentCode} codeLanguage={isFrontend ? "javascript" : "python"} />
             </Box>}
             {(isFrontend && currentCode !== "") && <SandpackProvider
               template="react"
@@ -401,10 +414,17 @@ export function CodeGenerationResult() {
           </Button>
         </CardActions>
       </Card>
-      <div style={{ margin: "auto", textAlign: "center" }}>
+      <Box
+        component="footer"
+        sx={{
+          py: 2,
+          px: 2,
+          textAlign: 'center',
+        }}
+      >
         <Typography variant="p" component="p" fontWeight={100} fontSize={12} color='#bbb'>A BOUN M.Sc. Software Engineering Graduate Project</Typography>
         <Typography variant="p" component="p" fontWeight={100} fontSize={14} color='#bbb'>Designed and developed by Erkin GÖNÜLTAŞ, instructed by Prof. Dr. Fatih ALAGÖZ</Typography>
-      </div>
+      </Box>
     </Box>
 
   );
