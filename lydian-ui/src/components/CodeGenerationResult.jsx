@@ -1,10 +1,12 @@
-import React, { useState, useRef } from 'react';
-import { Button, Card, CardContent, CardHeader, CardActions, Typography, Box, IconButton, Tooltip } from '@mui/material';
+import React, { useState, useRef, useEffect } from 'react';
+import { Button, Card, CardContent, CardHeader, CardActions, Typography, Box, IconButton, Tooltip, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import Snackbar from '@mui/material/Snackbar';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import KeyboardVoiceIcon from '@mui/icons-material/KeyboardVoice';
 import LogoutIcon from '@mui/icons-material/Logout';
-import InventoryIcon from '@mui/icons-material/Inventory';
+import AddIcon from '@mui/icons-material/Add';
+import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { CodeEditor } from './CodeEditor';
 import { useCodeVersions } from '../hooks/useCodeVersions';
 import axios from 'axios';
@@ -16,67 +18,48 @@ import {
 } from "@codesandbox/sandpack-react";
 import axiosInstance from '../utils/axiosInstance';
 
-const initialCode = `def multiply(a, b):
-    return a * b
-`;
+const initialReactCode = `import React from 'react';  
 
-const initialReactCode = `import React, { useState } from 'react';
-
-const Dummy = () => {
-    const [count, setCount] = useState(0);
-
-    const increment = () => {
-        setCount(count + 1);
-    };
-
-    const decrement = () => {
-        setCount(count - 1);
-    };
-
-    const reset = () => {
-        setCount(0);
-    };
-
-    return (
-        <div className="flex flex-col items-center m-4 p-4 bg-gray-100 rounded shadow">
-            <h1 className="text-2xl mb-4">Counter: {count}</h1>
-            <div className="flex space-x-4">
-                <button onClick={increment} className="bg-green-500 text-white p-2 rounded hover:bg-green-600">
-                    Increment
-                </button>
-                <button onClick={decrement} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
-                    Decrement
-                </button>
-                <button onClick={reset} className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
-                    Reset
-                </button>
-            </div>
-        </div>
-    );
-};
+const Dummy = () => {  
+    return (  
+        <div className="flex items-center justify-center h-screen bg-gray-100">  
+            <h1 className="text-4xl font-bold text-blue-600">Hello, World!</h1>  
+        </div>  
+    );  
+};  
 
 export default Dummy;
 `;
 
 export function CodeGenerationResult() {
+  const [sessions, setSessions] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [open, setOpen] = useState(false);
+  const [snackText, setSnackText] = useState("");
   const previewRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
-  const [instruction, setInstruction] = useState("Create a function to multiply two numbers");
+  const [instruction, setInstruction] = useState("For example: Create a react app to calculate bills.");
   const [isFrontend, setIsFrontend] = useState(true);
   const [error, setError] = useState("");
   const [code, setCode] = useState(initialReactCode);
-  const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions(initialCode);
+  const { currentCode, addVersion, goToPreviousVersion, goToNextVersion, canGoBack, canGoForward } = useCodeVersions("");
 
   const logoutUser = async () => {
     await axiosInstance.post(`${process.env.REACT_APP_API_URL}/logout`);
     window.location.href = "/";
   };
 
-  const handleClick = () => {
+  const showSnack = (text) => {
+    setSnackText(text);
     setOpen(true);
-    togglePreview();
+    
   };
+
+  const switchMode = () => {
+    togglePreview();
+    showSnack("A React code must be on the Workbench.");
+  }
+
   const handleClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -103,17 +86,21 @@ export function CodeGenerationResult() {
     try {
       // Send request to the Flask backend
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/generate`);
+      showSnack("Prompt recieved...");
       if (response.data.success) {
         setInstruction(response.data.instruction);
         handleCodeChange(response.data.updated_code);
         setIsFrontend(response.data.is_frontend);
+        showSnack("Code is being generated...");
       } else {
         setError(response.data.error || "An unknown error occurred.");
       }
-    } catch (err) {
-      setError("Failed to connect to the backend. Ensure the Flask server is running.");
-    } finally {
       setIsListening(false);
+    } catch (err) {
+      setError(err);
+    } finally {
+      showSnack("Success");
+      
     }
   };
 
@@ -159,6 +146,121 @@ export function CodeGenerationResult() {
     };
   };
 
+  // SESSION MANAGEMENT
+  useEffect(() => {
+    async function fetchSessions() {
+      try {
+        const response = await axiosInstance.get(`${process.env.REACT_APP_API_URL}/@me/chats`);
+        if (response.status === 200) {
+          setSessions(response.data);
+        } else {
+          showSnack("Failed to fetch sessions");
+          console.error('Failed to fetch sessions:', response.statusText);
+        }
+      } catch (error) {
+        showSnack("Error fetching sessions");
+        console.error('Error fetching sessions:', error);
+      }
+    }
+
+    fetchSessions();
+  }, []);
+
+  useEffect(() => {
+    if (selectedSessionId) {
+      async function loadSession() {
+        try {
+          const session = sessions.find(session => session.id === selectedSessionId);
+          if (!session) {showSnack("error when loading the session."); return;}
+          handleCodeChange(session.code.toString());
+          setInstruction('');
+          showSnack("Session loaded.");
+        } catch (error) {
+          console.error('Error loading session:', error);
+        }
+      }
+
+      loadSession();
+    }
+  }, [selectedSessionId]);
+
+  async function createSession() {
+    const sessionName = prompt("Enter a name for the session: ");
+    if (sessionName) {
+      try {
+        const response = await axiosInstance.post(`${process.env.REACT_APP_API_URL}/@me/chats/create`, {
+          name: sessionName,
+          code: initialReactCode
+        });
+        if (response.status === 201) {
+          setSessions(prevSessions => [...prevSessions, response.data]);
+          setSelectedSessionId(response.data.id);
+          showSnack("Session created.");
+        } else {
+          console.error('Failed to create session:', response.statusText);
+          showSnack("Failed to create session.");
+        }
+      } catch (error) {
+        showSnack("Failed to create session.");
+        console.error('Error creating session:', error);
+      } 
+    } else {
+      alert("enter a name");
+    }
+  }
+
+  const handleUpdateSession = async () => {
+    try {
+        const response = await axiosInstance.put(`${process.env.REACT_APP_API_URL}/@me/chats/${selectedSessionId}`, { code: currentCode });
+        
+        if (response.status === 200) {
+          setSessions(sessions.map(session => 
+            session.id === selectedSessionId ? { ...session, code: currentCode } : session
+          ));
+          showSnack("Session progress saved");
+        } else {
+          console.error('Failed to save session progress:', response.statusText);
+        }
+    } catch (error) {
+      showSnack(`Error updating session: ${error}`, );
+        console.error('Error updating session:', error);
+    }
+};
+
+  async function deleteSession() {
+    try {
+      await axiosInstance.delete(`${process.env.REACT_APP_API_URL}/@me/chats/${selectedSessionId}`);
+      setSessions(prevSessions => prevSessions.filter(session => session.id !== selectedSessionId));
+      setSelectedSessionId(null);
+      showSnack("Session deleted");
+    } catch (error) {
+      showSnack("Error deleting session");
+      console.error('Error deleting session:', error);
+    }
+  }
+
+  async function renameSession() {
+    const sessionName = prompt("Enter a name for the session: ");
+    if (sessionName) {
+      try {
+        const response = await axiosInstance.put(`${process.env.REACT_APP_API_URL}/@me/chat/rename/${selectedSessionId}`, {
+          name: sessionName
+        });
+        if (response.status === 200) {
+          setSessions(prevSessions => prevSessions.map(session =>
+            session.id === selectedSessionId ? response.data : session
+          ));
+          showSnack(`Session renamed to ${sessionName}`);
+        } else {
+          console.error('Failed to rename session:', response.statusText);
+        }
+      } catch (error) {
+        showSnack("Error renaming session");
+        console.error('Error renaming session:', error);
+      } 
+    }
+  }
+
   return (
     <Box sx={{
       display: 'flex',
@@ -168,7 +270,7 @@ export function CodeGenerationResult() {
       minHeight: '100vh',
       padding: 3
     }}>
-      <Card sx={{ width: '100%', marginBottom: 2 }} variant="none">
+      <Card sx={{ width: '100%' }} variant="none">
         <CardHeader title={<Typography variant="h4" component="h2" fontWeight={900} gutterBottom align="center">LydianAI</Typography>} 
         action={
           <IconButton edge="end" aria-label="logout" onClick={logoutUser}>
@@ -178,40 +280,68 @@ export function CodeGenerationResult() {
           </IconButton>
         }
         avatar={
+          <div style={{ display: "flex", alignItems: "center"}}>
+            <IconButton edge="end" aria-label="create-session" color={'primary'} onClick={() => createSession()} style={{ marginRight: "8px" }}>
+              <Tooltip title="create a new session">
+                <AddIcon/>
+              </Tooltip>
+            </IconButton>
+            {sessions.length > 0 ?
+            <FormControl sx={{ m: 1, minWidth: 120 }}>
+            <InputLabel id="user_sessions">Sessions</InputLabel>
+            <Select
+              labelId="user_sessions"
+            id="user-sessions"
+            value={selectedSessionId}
+              label="Sessions"
+              onChange={(e) => setSelectedSessionId(e.target.value)}
+            >
+              {sessions.map(session => (
+                <MenuItem key={session.id} id={session.id} value={session.id}>{session.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+             : <Typography>Create session</Typography>}
+            <IconButton edge="end" aria-label="rename-session" onClick={() => renameSession()} style={{ marginLeft: "3px" }}>
+              <Tooltip title="rename selected session">
+                <DriveFileRenameOutlineIcon/>
+              </Tooltip>
+            </IconButton>
+            <IconButton edge="end" aria-label="delete-session" onClick={() => selectedSessionId == null ? null : deleteSession()} style={{ marginLeft: "8px", color: "red" }}>
+              <Tooltip title="delete selected session">
+                <DeleteIcon/>
+              </Tooltip>
+            </IconButton>
+          </div>
           
-          <IconButton edge="end" aria-label="logout" onClick={() => {alert("display sessions")}}>
-            <Tooltip title="Logout">
-            <InventoryIcon/>
-            </Tooltip>
-          </IconButton>
         } />
       </Card>
-      <Card sx={{ height: "80vh", maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
+      <Card sx={{ height: "75vh", maxWidth: '100%', width: isFrontend ? '100%' : 800, margin: 'auto' }}>
         <CardHeader
           title="Workbench"
           action={
             <Tooltip title="Render React codes" arrow placement="top">
-              <IconButton aria-label="toggle-preview" onClick={handleClick}>
+              <IconButton aria-label="toggle-preview" onClick={() => switchMode()}>
                 <GraphicEqIcon />
               </IconButton>
-              <Snackbar
-                open={open}
-                autoHideDuration={5000}
-                onClose={handleClose}
-                message="A React code must be on the Workbench."
-              />
             </Tooltip>
           } />
-        <Box sx={{ paddingX: '20px' }}>
-          <Typography variant="h7" fontWeight={"500"} gutterBottom>{error == "" ? "Prompt" : error}</Typography><br />
+          <Snackbar
+            open={open}
+            autoHideDuration={5000}
+            onClose={handleClose}
+            message={snackText}
+          />
+        <Box sx={{ paddingX: '20px' }} style={{ display: selectedSessionId == null ? "none" : "block" }}>
+          <Typography variant="h7" fontWeight={"500"} gutterBottom>{error === "" ? "Prompt" : error}</Typography><br />
           <Typography variant="h8" fontWeight={"400"} gutterBottom>{instruction ?? error}</Typography>
         </Box>
         <CardContent>
-          <Box height="56vh" >
+          {selectedSessionId == null ? <Typography>Choose a session to start</Typography> :<Box height="56vh" >
             {!isFrontend && <Box sx={{ flex: 1 }}>
               <CodeEditor initialCode={currentCode} onCodeChange={handleCodeChange} codeLanguage={isFrontend ? "javascript" : "python"} />
             </Box>}
-            {isFrontend && <SandpackProvider
+            {(isFrontend && currentCode !== "") && <SandpackProvider
               template="react"
 
               files={{
@@ -247,14 +377,17 @@ export function CodeGenerationResult() {
               </SandpackLayout>
             </SandpackProvider>
             }
-          </Box>
+          </Box>}
         </CardContent>
-        <CardActions>
+        <CardActions style={{ display: selectedSessionId == null ? "none" : "flex" }}>
           <Button onClick={goToPreviousVersion} disabled={!canGoBack} sx={{ mr: 1 }}>
             Previous Version
           </Button>
           <Button onClick={goToNextVersion} disabled={!canGoForward}>
             Next Version
+          </Button>
+          <Button onClick={handleUpdateSession} disabled={(currentCode === "" && !canGoForward)}>
+            Save
           </Button>
           <Button
             onClick={toggleListening}

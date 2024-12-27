@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_session import Session
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 from app.models.models import db, User
 from app.utils.config import ApplicationConfig
@@ -27,6 +28,7 @@ def create_app():
     from app.routes.login import login_bp
     from app.routes.getme import current_user_bp
     from app.routes.logout import logout_bp
+    from app.routes.code_session import chats_bp
 
     app.register_blueprint(recognize_bp)
     app.register_blueprint(generate_bp)
@@ -35,5 +37,7 @@ def create_app():
     app.register_blueprint(login_bp)
     app.register_blueprint(current_user_bp)
     app.register_blueprint(logout_bp)
+    app.register_blueprint(chats_bp)
     
+    migrate = Migrate(app, db)
     return app

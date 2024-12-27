@@ -1,5 +1,5 @@
 import openai
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request
 from app.utils.clean_code import clean_code
 from app.utils.react_formatter import format_react_code
 import os
@@ -55,14 +55,3 @@ def generate_code():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
         
-        
-    # response = openai.chat.completions.create(
-    #     model="gpt-4o-mini",
-    #     messages=messages,
-    #     stream=True
-    # )
-    # for chunk in response:
-    #     if chunk.choices[0].delta.content is not None:
-    #         code_piece = chunk.choices[0].delta.content
-    #         if code_piece:
-    #             yield code_piece
